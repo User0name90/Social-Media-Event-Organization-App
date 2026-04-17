@@ -1,6 +1,9 @@
 package event_org;
 
-
+/**
+ * This class stores the basic information of the User. Both User name and ID are unique for every user.
+ * Username can be changed but it still needs to be unique.
+ */
 class User {
 	/** 
 	 * Stores a user friends in an array. It was a part of initial development that is why an array without

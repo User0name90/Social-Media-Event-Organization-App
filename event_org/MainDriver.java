@@ -14,8 +14,8 @@ package event_org;
 public class MainDriver {
 	public static void main(String args[])
 	{
-		if(!FileIO.InitializeFiles()) UI.PrintError("File Initilaization failed");
-		else UI.PrintSuccess("Program Started Successfully\n");
+		if(!FileIO.InitializeFiles()) UI_utility.PrintError("File Initilaization failed");
+		else UI_utility.PrintSuccess("Program Started Successfully\n");
 		
 		System.out.println("Welcome to the Social Media Event Organizer\n");
 		while(true){

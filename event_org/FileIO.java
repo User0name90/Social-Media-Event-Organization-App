@@ -11,16 +11,57 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
-
+/**
+ * Provides all file-system I/O operations for the event organiser application.
+ * <p>
+ * This class is never instantiated; every method is static. It is responsible for:
+ * <ul>
+ *   <li>Creating and deleting files and directories.</li>
+ *   <li>Persisting and reading users, events, invitations, friend requests, RSVP
+ *       responses, and notifications.</li>
+ *   <li>Generating unique IDs for users, events, and invitations.</li>
+ *   <li>Synchronising session-scoped state (friends, notifications, upcoming events,
+ *       etc.) with the flat-file database at login and logout.</li>
+ * </ul>
+ * All data is stored as comma-separated text files under a {@code root/} directory
+ * and per-user folders named {@code user_<ID>/}.
+ * </p>
+ */
 class FileIO {
+	/** Path to the global file that stores all registered user records. */
 	private static final String USER_FILE = "root/Users.txt";
+ 
+	/** Path to the global file that records every invitation ever sent. */
 	private static final String INVITATION_FILE = "root/Invitaton.txt";
+ 
+	/** Path to the global file that records all outgoing friend requests. */
 	private static final String FRIEND_REQUEST_FILE = "root/FriendRequest.txt";
+ 
+	/** Path to the global file that records all friend-request responses (accept/reject/delete). */
 	private static final String FRIEND_RESPONSE_FILE="root/FriendResponse.txt";
+ 
+	/** Path to the global file that records all RSVP responses to invitations. */
 	private static final String RSVP_FILE = "root/RSVP.txt";
+ 
+	/** Path to the global file that records every event that has ever been created. */
 	private static final String CREATED_EVENT_FILE="root/CreatedEvents.txt";
+ 
+	/** Path to the global file that records the latest version of every edited event. */
 	private static final String EDITED_EVENT_FILE="root/EditedEvents.txt";
+ 
+	/** Path to the global file that records the IDs of all deleted events. */
 	private static final String DELETED_EVENT_FILE="root/DeletedEvents.txt";
+	/**
+	 * Creates a directory (and any necessary parent directories) at the given path.
+	 * <p>
+	 * If the directory already exists the method returns {@code true} immediately
+	 * without performing any filesystem operation.
+	 * </p>
+	 *
+	 * @param path the relative or absolute path of the directory to create
+	 * @return {@code true} if the directory exists or was created successfully;
+	 *         {@code false} if {@link File#mkdirs()} failed
+	 */
 	static boolean CreateFolder(String path)
 	{
 		File dir = new File(path);
@@ -33,6 +74,17 @@ class FileIO {
         }
         return true;
 	}
+	/**
+	 * Creates an empty file at the given path.
+	 * <p>
+	 * If the file already exists the method returns {@code true} immediately without
+	 * modifying the file.
+	 * </p>
+	 *
+	 * @param path_filename the relative or absolute path of the file to create
+	 * @return {@code true} if the file exists or was created successfully;
+	 *         {@code false} if an exception was thrown during creation
+	 */
 	static boolean CreateFile(String path_filename)
 	{
 		File file = new File(path_filename);
@@ -46,6 +98,18 @@ class FileIO {
         }
         return true;
 	}
+	/**
+	 * Recursively deletes a folder and all of its contents.
+	 * <p>
+	 * If the folder does not exist the method returns {@code true} immediately.
+	 * Deletion stops and returns {@code false} as soon as any individual file or
+	 * sub-directory cannot be removed.
+	 * </p>
+	 *
+	 * @param foldername the path to the folder to delete
+	 * @return {@code true} if the folder and all its contents were deleted (or the
+	 *         folder did not exist); {@code false} if any deletion failed
+	 */
 	public static boolean deleteFolder(String foldername) 
 	{
 		File folder=new File(foldername);
@@ -79,6 +143,17 @@ class FileIO {
 		}
 	    return folder.delete();
 	}
+	/**
+	 * Ensures that all root-level application files and directories exist, creating
+	 * them if necessary.
+	 * <p>
+	 * This should be called once at application startup before any other
+	 * {@link FileIO} method is used.
+	 * </p>
+	 *
+	 * @return {@code true} if all required files and the {@code root/} directory exist
+	 *         or were created successfully; {@code false} if any creation failed
+	 */
 	static boolean InitializeFiles()
 	{
 		if(CreateFolder("root")&& CreateFile(USER_FILE)&& CreateFile(INVITATION_FILE )&&
@@ -88,6 +163,15 @@ class FileIO {
 			return true;
 		else return false;
 	}
+	/**
+	 * Appends a new friend request to the global friend-request file and records the
+	 * recipient's ID in the current user's sent-requests file.
+	 *
+	 * @param Fr the {@link FriendRequest} to persist; must have valid {@code from} and
+	 *           {@code to} IDs
+	 * @return {@code true} if both writes succeeded; {@code false} on any
+	 *         {@link IOException}
+	 */
 	static boolean EnterFriendRequest(FriendRequest Fr)
 	{
 		try
@@ -108,6 +192,15 @@ class FileIO {
 			return false;
 		}
 	}
+	/**
+	 * Records the current user's response (accept or reject) to a friend request and
+	 * removes the corresponding entry from the current user's received-requests file.
+	 *
+	 * @param Fr the {@link FriendRequest} carrying the sender's ID, the current user's
+	 *           ID, and the chosen {@link RequestResponse}
+	 * @return {@code true} if the response was written and the received-requests file
+	 *         was updated; {@code false} on any {@link IOException}
+	 */
 	static boolean RespondToRequest(FriendRequest Fr)
 	{
 		ArrayList<FriendRequest>Fr_list=new ArrayList<>();
@@ -149,6 +242,15 @@ class FileIO {
 			return false;
 		}
 	}
+	/**
+	 * Persists a new invitation to the global invitation file and to the event's local
+	 * {@code invited.txt} file inside the current session's event folder.
+	 *
+	 * @param iv the {@link Invitation} to store; must have a valid ID, sender, and
+	 *           recipient
+	 * @return {@code true} if both writes succeeded; {@code false} on any
+	 *         {@link IOException}
+	 */
 	static boolean EnterNewInvitation(Invitation iv)
 	{
 		try
@@ -171,6 +273,16 @@ class FileIO {
 			return false;
 		}
 	}
+	/**
+	 * Records the current user's RSVP response to an invitation in the global RSVP
+	 * file, optionally adds the event to the user's upcoming-events file (for ACCEPTED
+	 * or MAYBE responses), and removes the invitation from the user's pending
+	 * invitations file.
+	 *
+	 * @param iv the {@link Invitation} carrying the chosen {@link RSVP} status
+	 * @return {@code true} if all file operations succeeded; {@code false} on any
+	 *         {@link IOException}
+	 */
 	static boolean RespondToInvitation(Invitation iv)
 	{
 		try(BufferedWriter writer = new BufferedWriter(new FileWriter(RSVP_FILE,true)))
@@ -186,7 +298,6 @@ class FileIO {
 				writer_user.newLine();
 				writer_user.close();
 			}
-			// yet to complete.
 			Invitation Received_iv[]=FileIO.GetReceivedInvitations();
 			writer_user=new BufferedWriter(new FileWriter(UI.CurrentSession.User_invitations_file));
 			for(int i=0;i<Received_iv.length;i++)
@@ -208,6 +319,14 @@ class FileIO {
 			return false;
 		}
 	}
+	/**
+	 * Appends a new user record to the global users file.
+	 *
+	 * @param us the {@link User} to persist; the record is written as
+	 *           {@code ID,username,email,password}
+	 * @return {@code true} if the write succeeded; {@code false} on any
+	 *         {@link IOException}
+	 */
 	static boolean EnterNewUser(User us)
 	{
 		
@@ -223,6 +342,15 @@ class FileIO {
 			return false;
 		}
 	}
+	/**
+	 * Persists a newly created event to the global created-events file, the current
+	 * user's events file, and creates a dedicated event sub-folder containing empty
+	 * {@code invited.txt} and {@code RSVP.txt} files.
+	 *
+	 * @param ev the {@link Event} to persist
+	 * @return {@code true} if all file operations succeeded; {@code false} on any
+	 *         {@link IOException}
+	 */
 	static boolean EnterNewEvent(Event ev)
 	{
 		try
@@ -249,6 +377,15 @@ class FileIO {
 			return false;
 		}
 	}
+	/**
+	 * Persists an edited event to the global edited-events file and rewrites the
+	 * current user's events file so that the matching record reflects the new event
+	 * data.
+	 *
+	 * @param ev the updated {@link Event}; must not be {@code null}
+	 * @return {@code true} if all file operations succeeded; {@code false} if
+	 *         {@code ev} is {@code null} or any {@link IOException} occurs
+	 */
 	static boolean EditEvent(Event ev)
 	{
 		Event events_list[];
@@ -280,6 +417,15 @@ class FileIO {
 			return false;
 		}
 	}
+	/**
+	 * Records an event deletion in the global deleted-events file, removes the event
+	 * from the current user's events file, and deletes the event's local folder and
+	 * all its contents.
+	 *
+	 * @param ev the {@link Event} to delete; must not be {@code null}
+	 * @return {@code true} if all file operations succeeded; {@code false} if
+	 *         {@code ev} is {@code null} or any {@link IOException} occurs
+	 */
 	static boolean DeleteEvent(Event ev)
 	{
 		Event events_list[];
@@ -306,7 +452,7 @@ class FileIO {
 			
 			if(!FileIO.deleteFolder(UI.CurrentSession.Event_Folder+"/"+ev.getID()))
 			{
-				UI.PrintError("Fatal error occured while deleting Event Files.");
+				UI_utility.PrintError("Fatal error occured while deleting Event Files.");
 				return false;
 			}
 			return true;
@@ -317,6 +463,18 @@ class FileIO {
 			return false;
 		}
 	}
+	/**
+	 * Generates a unique 10-character alphanumeric user ID by reading the last record
+	 * in the global users file and incrementing it.
+	 * <p>
+	 * The ID space uses digits {@code '0'–'9'} followed by uppercase letters
+	 * {@code 'A'–'Z'}, incrementing from the rightmost character. If the file is
+	 * empty, {@code "0000000000"} is returned as the first ID.
+	 * </p>
+	 *
+	 * @return a new unique 10-character ID string, or {@code null} if an
+	 *         {@link IOException} occurs
+	 */
 	static String Create_UserID()
 	{
 		try(BufferedReader reader = new BufferedReader(new FileReader(USER_FILE)))
@@ -376,6 +534,17 @@ class FileIO {
 			return null;
 		}
 	}
+	/**
+	 * Generates a unique 10-character alphanumeric event ID by reading the last record
+	 * in the global created-events file and incrementing it.
+	 * <p>
+	 * Uses the same base-36 increment algorithm as {@link #Create_UserID()}.  If the
+	 * file is empty, {@code "0000000000"} is returned as the first ID.
+	 * </p>
+	 *
+	 * @return a new unique 10-character ID string, or {@code null} if an
+	 *         {@link IOException} occurs
+	 */
 	static String Create_EventID()
 	{
 		try(BufferedReader reader = new BufferedReader(new FileReader(CREATED_EVENT_FILE)))
@@ -435,6 +604,20 @@ class FileIO {
 			return null;
 		}
 	}
+	/**
+	 * Generates a unique invitation ID for the given event by reading the last entry
+	 * in the event's {@code invited.txt} file and incrementing the sequence portion.
+	 * <p>
+	 * The returned ID has the format {@code <eventID>.<sequence>} where
+	 * {@code <sequence>} is a 10-character alphanumeric value using the same
+	 * base-36 increment algorithm as {@link #Create_UserID()}. If no invitations
+	 * exist yet, the sequence starts at {@code "0000000000"}.
+	 * </p>
+	 *
+	 * @param ev the {@link Event} for which an invitation ID is needed
+	 * @return a new unique invitation ID string, or {@code null} if an
+	 *         {@link IOException} occurs
+	 */
 	static String Create_InviteID(Event ev)
 	{
 		String EventID=ev.getID();
@@ -501,6 +684,12 @@ class FileIO {
 			return null;
 		}
 	}
+	/**
+	 * Reads and returns all events owned by the current user from their events file.
+	 *
+	 * @return an array of {@link Event} objects; an empty array if no events exist or
+	 *         an {@link IOException} occurs
+	 */
 	static Event[] GetUserEvent()
 	{
 		ArrayList<Event> ev = new ArrayList<>();
@@ -553,6 +742,13 @@ class FileIO {
 			return new Event[0];
 		}
 	}
+	/**
+	 * Looks up a single event owned by the current user by its ID.
+	 *
+	 * @param ID the 10-character event ID to search for
+	 * @return a one-element {@link Event} array if found; an empty array if the event
+	 *         does not exist in the user's events file or an {@link IOException} occurs
+	 */
 	static Event[] GetUserEvent(String ID)
 	{
 		Event ev[];
@@ -612,6 +808,22 @@ class FileIO {
 			return new Event[0];
 		}
 	}
+	/**
+	 * Retrieves the authoritative (root) version of an event from the global event
+	 * files using the following priority:
+	 * <ol>
+	 *   <li>If the ID appears in the deleted-events file, returns an empty array
+	 *       (event has been removed).</li>
+	 *   <li>If the ID appears in the edited-events file, returns the most recently
+	 *       edited version.</li>
+	 *   <li>Otherwise, returns the original record from the created-events file.</li>
+	 * </ol>
+	 *
+	 * @param ID the 10-character event ID to look up
+	 * @return a one-element {@link Event} array with the current event data, or an
+	 *         empty array if the event has been deleted, does not exist, or an
+	 *         {@link IOException} occurs
+	 */
 	static Event[] GetRootEvent(String ID)
 	{
 		Event ev[]=null;
@@ -733,6 +945,13 @@ class FileIO {
 			return new Event[0];
 		}
 	}
+	/**
+	 * Reads and returns all pending invitations received by the current user from
+	 * their invitations file.
+	 *
+	 * @return an array of {@link Invitation} objects; an empty array if there are no
+	 *         pending invitations or an {@link IOException} occurs
+	 */
 	static Invitation[] GetReceivedInvitations()
 	{
 		ArrayList<Invitation> iv = new ArrayList<>();
@@ -776,6 +995,13 @@ class FileIO {
 			return new Invitation[0];
 		}
 	}
+	/**
+	 * Reads and returns all upcoming events that the current user has accepted or
+	 * indicated interest in attending from their upcoming-events file.
+	 *
+	 * @return an array of {@link Event} objects representing upcoming events; an empty
+	 *         array if there are none or an {@link IOException} occurs
+	 */
 	static Event[] GetUpcomingUserEvents()
 	{
 		ArrayList<Event> ev = new ArrayList<>();
@@ -829,6 +1055,19 @@ class FileIO {
 		}
 		
 	}
+	/**
+	 * Retrieves all invitations for a given event along with their current RSVP
+	 * statuses.
+	 * <p>
+	 * The method reads the event's {@code invited.txt} file to build a map of
+	 * invitations keyed by their full ID, then reads the event's {@code RSVP.txt}
+	 * file to overlay any recorded responses onto the corresponding invitation objects.
+	 * </p>
+	 *
+	 * @param ev the {@link Event} whose invitation responses are to be retrieved
+	 * @return an array of {@link Invitation} objects (with {@link RSVP} status set);
+	 *         an empty array if an {@link IOException} occurs
+	 */
 	static Invitation[] GetUserEventResponse(Event ev)
 	{
 		
@@ -908,10 +1147,17 @@ class FileIO {
 		catch(IOException e)
 		{
 			e.printStackTrace();
-			UI.PrintError("File Error occured while reading files");
+			UI_utility.PrintError("File Error occured while reading files");
 			return new Invitation[0];
 		}
 	}
+	/**
+	 * Reads and returns all pending friend requests received by the current user from
+	 * their received-requests file.
+	 *
+	 * @return an array of {@link FriendRequest} objects; an empty array if there are
+	 *         none or an {@link IOException} occurs
+	 */
 	static FriendRequest[] GetFriendRequests()
 	{
 		ArrayList<FriendRequest> fr = new ArrayList<>();
@@ -941,6 +1187,13 @@ class FileIO {
 			return new FriendRequest[0];
 		}
 	}
+	/**
+	 * Reads and returns all friend requests that the current user has sent and that
+	 * have not yet received a response, from their sent-requests file.
+	 *
+	 * @return an array of {@link FriendRequest} objects; an empty array if there are
+	 *         none or an {@link IOException} occurs
+	 */
 	static FriendRequest[] GetSentRequests()
 	{
 		ArrayList<FriendRequest> fr = new ArrayList<>();
@@ -970,6 +1223,14 @@ class FileIO {
 			return new FriendRequest[0];
 		}
 	}
+	/**
+	 * Searches the global users file for a user with the given ID and returns a
+	 * {@link User} object populated with their stored data.
+	 *
+	 * @param ID the 10-character user ID to search for
+	 * @return the matching {@link User}, or {@code null} if no user with that ID
+	 *         exists or an {@link IOException} occurs
+	 */
 	static User SearchUserID(String ID)
 	{
 		String emailaddress,name,password;
@@ -1002,12 +1263,19 @@ class FileIO {
 		catch (IOException e)
 		{
 			e.printStackTrace();
-			UI.PrintError("File System Error occured");
+			UI_utility.PrintError("File System Error occured");
 			return null;
 		}
 		
 	}
-	
+	/**
+	 * Searches the global users file for a user with the given username and returns a
+	 * {@link User} object populated with their stored data.
+	 *
+	 * @param username the exact username to search for (case-sensitive)
+	 * @return the matching {@link User}, or {@code null} if no user with that username
+	 *         exists or an {@link IOException} occurs
+	 */
 	static User SearchUsername(String username)
 	{
 		String emailaddress,ID,password;
@@ -1037,10 +1305,19 @@ class FileIO {
 		catch (IOException e)
 		{
 			e.printStackTrace();
-			UI.PrintError("File System Error occured");
+			UI_utility.PrintError("File System Error occured");
 			return null;
 		}
 	}
+	/**
+	 * Authenticates a user by verifying that the supplied username exists and that its
+	 * stored password matches the provided password.
+	 *
+	 * @param username the username to authenticate
+	 * @param password the plaintext password to verify
+	 * @return the authenticated {@link User} if credentials are valid; {@code null} if
+	 *         the username does not exist or the password does not match
+	 */
 	static User SearchUserforAuthentication(String username,String password)
 	{
 		User us=FileIO.SearchUsername(username);
@@ -1049,6 +1326,15 @@ class FileIO {
 		if(us.getPassword().equals(password)) return us;
 		else return null;
 	}
+	/**
+	 * Reads the first line of the current user's info file and stores it in
+	 * {@link UI.CurrentSession#UserInfo}, which holds the timestamp of the last
+	 * session start.
+	 *
+	 * @return {@code true} if the file was read successfully; {@code false} on any
+	 *         {@link IOException} (in which case {@code UserInfo} is set to
+	 *         {@code null})
+	 */
 	static boolean SetUserInfo()
 	{
 		try(BufferedReader reader = new BufferedReader(new FileReader(UI.CurrentSession.User_Info_file)))
@@ -1063,6 +1349,18 @@ class FileIO {
 			return false;
 		}
 	}
+	/**
+	 * Loads the current user's friend list from their friend-list file into the
+	 * in-memory {@link User} object.
+	 * <p>
+	 * If a friend's username in the file differs from their current username in the
+	 * global users file, a {@link Notification} is generated to inform the user of the
+	 * change, and the in-memory username is updated.
+	 * </p>
+	 *
+	 * @return {@code true} if the friend list was loaded successfully; {@code false}
+	 *         on any {@link IOException}
+	 */
 	static boolean SetUserFriends()
 	{
 		String ID,name,temp;
@@ -1107,6 +1405,17 @@ class FileIO {
 			return false;
 		}
 	}
+	/**
+	 * Loads the current user's saved notifications from their notifications file into
+	 * {@link UI.CurrentSession#Notifications}.
+	 * <p>
+	 * Each line is parsed as {@code message,seen,timestamp} and converted to a
+	 * {@link Notification} object. Blank or malformed lines are silently skipped.
+	 * </p>
+	 *
+	 * @return {@code true} if the notifications were loaded successfully; {@code false}
+	 *         on any {@link IOException}
+	 */
 	static boolean SetUserNotifications()
 	{
 		String temp;
@@ -1156,6 +1465,13 @@ class FileIO {
 			return false;
 		}
 	}
+	/**
+	 * Writes the current session's start time to the user's info file, overwriting any
+	 * previous value. This timestamp becomes the "last session time" on the next login.
+	 *
+	 * @return {@code true} if the write succeeded; {@code false} on any
+	 *         {@link IOException}
+	 */
 	static boolean SaveUserInfo()
 	{
 		try(BufferedWriter writer = new BufferedWriter(new FileWriter(UI.CurrentSession.User_Info_file)))
@@ -1171,6 +1487,13 @@ class FileIO {
 		}
 		//yet to do
 	}
+	/**
+	 * Overwrites the current user's friend-list file with the in-memory friend list,
+	 * writing each friend as {@code ID,username}.
+	 *
+	 * @return {@code true} if the write succeeded; {@code false} on any
+	 *         {@link IOException}
+	 */
 	static boolean SaveUserFriends()
 	{
 		try(BufferedWriter writer = new BufferedWriter(new FileWriter(UI.CurrentSession.User_friendlist_file,false)))
@@ -1189,6 +1512,13 @@ class FileIO {
 			return false;
 		}
 	}
+	/**
+	 * Overwrites the current user's notifications file with the in-memory list of
+	 * {@link Notification} objects, writing each as {@code message,seen,timestamp}.
+	 *
+	 * @return {@code true} if the write succeeded; {@code false} on any
+	 *         {@link IOException}
+	 */
 	static boolean SaveUserNotification()
 	{
 		try(BufferedWriter writer = new BufferedWriter(new FileWriter(UI.CurrentSession.User_notification_file,false)))
@@ -1207,6 +1537,16 @@ class FileIO {
 			return false;
 		}
 	}
+	/**
+	 * Updates the global users file so that the current user's record reflects any
+	 * in-session profile changes (username, password, or email address).
+	 * <p>
+	 * All other user records are preserved unchanged. The file is rewritten in full.
+	 * </p>
+	 *
+	 * @return {@code true} if the file was rewritten successfully; {@code false} on
+	 *         any {@link IOException}
+	 */
 	static boolean ChangeUserProfile()
 	{
 		ArrayList<User> Users =new ArrayList<>();
@@ -1263,6 +1603,18 @@ class FileIO {
 			return false;
 		}
 	}
+	/**
+	 * Synchronises the current user's pending invitations file at login.
+	 * <p>
+	 * First, any previously stored invitations that refer to deleted, past, or
+	 * otherwise invalid events are pruned. Then, new invitations sent to the current
+	 * user since their last session are appended, and a corresponding
+	 * {@link Invite_Notification} is generated for each one.
+	 * </p>
+	 *
+	 * @return {@code true} if the file was updated successfully; {@code false} on any
+	 *         {@link IOException}
+	 */
 	static boolean UpdateReceivedInvitations()
 	{
 		Invitation invite_list[];
@@ -1334,6 +1686,23 @@ class FileIO {
 			return false;
 		}
 	}
+	/**
+	 * Synchronises the current user's upcoming-events file at login.
+	 * <p>
+	 * For each stored upcoming event:
+	 * <ul>
+	 *   <li>If the event has been deleted, an {@link EventCancel_Notification} is
+	 *       generated and the event is dropped.</li>
+	 *   <li>If the event has been edited, an {@link EventChange_Notification} is
+	 *       generated and the local record is updated.</li>
+	 *   <li>If the event's date/time has already passed, it is silently dropped.</li>
+	 * </ul>
+	 * The file is rewritten with only the valid, still-upcoming events.
+	 * </p>
+	 *
+	 * @return {@code true} if the file was updated successfully; {@code false} on any
+	 *         {@link IOException}
+	 */
 	static boolean UpdateUpcomingUserEvents()
 	{
 		Event Upcomingev[]=FileIO.GetUpcomingUserEvents();
@@ -1370,6 +1739,18 @@ class FileIO {
 			return false;
 		}
 	}
+	/**
+	 * Scans the global RSVP file at login for new responses to invitations for events
+	 * owned by the current user.
+	 * <p>
+	 * For each RSVP entry that was recorded after the last session and belongs to one
+	 * of the current user's events, the response is written to the event's local
+	 * {@code RSVP.txt} file and a {@link Response_Notification} is generated.
+	 * </p>
+	 *
+	 * @return {@code true} if the file was processed successfully; {@code false} on
+	 *         any {@link IOException}
+	 */
 	static boolean UpdateResponseOfInvitations()
 	{
 		String temp,Event_ID,Full_ID;
@@ -1433,6 +1814,22 @@ class FileIO {
 			return false;
 		}
 	}
+	/**
+	 * Synchronises received and sent friend-request state at login.
+	 * <p>
+	 * <b>Received requests:</b> Any friend request sent to the current user since
+	 * their last session is appended to their received-requests file.
+	 * <br>
+	 * <b>Sent requests:</b> The global friend-response file is scanned for responses
+	 * to requests previously sent by the current user. Responded requests are removed
+	 * from the sent-requests file; if a request was accepted the responder is added as
+	 * a friend, and if the response is {@link RequestResponse#DELETED} the former
+	 * friend is removed.
+	 * </p>
+	 *
+	 * @return {@code true} if all file operations succeeded; {@code false} on any
+	 *         {@link IOException}
+	 */
 	static boolean UpdateReceivedAndSentFriendRequests()
 	{
 		String temp;
@@ -1570,7 +1967,20 @@ class FileIO {
 			return false;
 		}
 	}
-	//This function sends a response for deleting the current user as friend to the friend. It does not take any request
+	/**
+	 * Writes a {@link RequestResponse#DELETED} entry to the global friend-response
+	 * file on behalf of the current user, signalling to the other party that they have
+	 * been removed as a friend.
+	 * <p>
+	 * Note: this method does not require a prior friend request — it is called
+	 * unilaterally when the current user removes a friend.
+	 * </p>
+	 *
+	 * @param remove_friend the {@link User} who is being removed as a friend; must not
+	 *                      be {@code null}
+	 * @return {@code true} if the response was written successfully; {@code false} if
+	 *         {@code remove_friend} is {@code null} or an {@link IOException} occurs
+	 */
 	static boolean SendRemoveFriendResponse(User remove_friend)
 	{
 		if(remove_friend==null)return false;

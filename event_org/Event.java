@@ -1,17 +1,48 @@
 package event_org;
 import java.time.ZonedDateTime;
 import java.util.Objects;
-
+/**
+ * enum Event_t contains two values PRIVATE and PUBLIC which helps in storing the event type in Event class
+ */
 enum Event_t {PRIVATE,PUBLIC}
+/**
+ * This class stores all information of an Event and methods relating to Creating and Editing Events.
+ * Each event has a unique ID of 10 characters and each character can take value from  0 to 9 and A to Z 
+ */
 class Event {
-	
+	/**
+	 * Unique 10 character ID of the event.
+	 */
 	final private String ID;
-	final private String name;
+	/**
+	 * Name of the event. Two Events can have same name.
+	 */
+	private String name;
+	/**
+	 * Description of the Event
+	 */
 	private String Description;
+	/**
+	 * Location of the Event
+	 */
 	private String Location;
+	/**
+	 * Stores the type of the event, either PUBLIC of PRIVATE
+	 */
 	private Event_t EventType;
+	/**
+	 * Stores Date and Time of the Event
+	 */
 	private ZonedDateTime Event_DateTime;
-	
+	/**
+	 * Constructor of the Event class. It requires values of all the values of Data members.
+	 * @param ID : The String object containing unique ID generated from FileIO.Create_EventID()
+	 * @param name : String Object containing Name of the upcoming event
+	 * @param description : Description of the upcoming Event
+	 * @param Location : Location of the upcoming Event
+	 * @param EventType : Type of the Event.
+	 * @param Event_DT : ZonedDateTime object containing upcoming date and time of the Event.
+	 */
 	Event(String ID,String name,String description,String Location,Event_t EventType,ZonedDateTime Event_DT)
 	{
 		this.ID=ID;
@@ -21,10 +52,18 @@ class Event {
 		this.EventType=EventType;
 		this.Event_DateTime=Event_DT;
 	}
+	/**
+	 * Sets a new Description of the Event
+	 * @param Description : New Description of Event
+	 */
 	void setDescription(String Description)
 	{
 		this.Description=Description;
 	}
+	/**
+	 * Sets a new location of the Event
+	 * @param Location : New Location of the Event
+	 */
 	void setLocation(String Location)
 	{
 		this.Location=Location;
@@ -33,30 +72,57 @@ class Event {
 	{
 		this.Event_DateTime=Event_DT;
 	}
+	/**
+	 * Gets the Description of the Event
+	 * @return the String containing the description of the event.
+	 */
 	String getDescription()
 	{
 		return this.Description;
 	}
+	/**
+	 * Gets the Name of the event 
+	 * @return the String containing the name of the event.
+	 */
 	String getName()
 	{
 		return this.name;
 	}
+	/**
+	 * Gets the Location of the event 
+	 * @return the String containing the location of the event.
+	 */
 	String getLocation()
 	{
 		return this.Location;
 	}
+	/**
+	 * Gets the ID of the event 
+	 * @return the String containing the ID of the event.
+	 */
 	String getID()
 	{
 		return this.ID;
 	}
+	/**
+	 * Gets the Date and Time of the Event
+	 * @return the ZonedDateTime object containing the Date and Time of the Event.
+	 */
 	ZonedDateTime getEvent_DateTime()
 	{
 		return this.Event_DateTime;
 	}
+	/**
+	 * Gets the Type of the Event
+	 * @return enum Event_t containing the event Type
+	 */
 	Event_t getEventType()
 	{
 		return this.EventType;
 	}
+	/**
+	 * Event object is used with HashMap so it requires to be overloaded.
+	 */
 	@Override
 	public boolean equals(Object obj)
 	{
@@ -69,6 +135,9 @@ class Event {
 				this.name.equals(ev.getName()) && this.Description.equals(ev.getDescription())&&
 				this.EventType.equals(ev.getEventType()) &&this.Location.equals(ev.getLocation());
 	}
+	/**
+	 * The correct bucket in HashMap is identified using hashCode(). So It needed to be overloaded.
+	 */
 	@Override
 	public int hashCode()
 	{
