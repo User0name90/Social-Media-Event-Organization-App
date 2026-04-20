@@ -86,6 +86,7 @@ class EventCancel_Notification extends Notification
 	 */
 	EventCancel_Notification(Event ev)
 	{
+		super();
 		this.DeletedEvent=ev;
 		message="Upcomming event "+this.DeletedEvent.getID()+" is cancelled.";
 	}
@@ -108,11 +109,13 @@ class EventChange_Notification extends Notification
 	 */
 	EventChange_Notification(Event old_ev,Event changed_ev)
 	{
+		super();
 		this.OldEvent=old_ev;
 		this.ChangedEvent=changed_ev;
 		if(this.OldEvent.equals(this.ChangedEvent))
 		{
 			super.message=null;
+			return;
 		}
 		message="Upcoming event "+ChangedEvent.getID()+"Changed.";
 		if(!this.OldEvent.getName().equals(this.ChangedEvent.getName()))

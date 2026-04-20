@@ -1,5 +1,7 @@
 package event_org;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Objects;
 /**
  * enum Event_t contains two values PRIVATE and PUBLIC which helps in storing the event type in Event class
@@ -68,9 +70,30 @@ class Event {
 	{
 		this.Location=Location;
 	}
+	/**
+	 * Sets the date and time of the Event
+	 * @param Event_DT: ZondedDateTime object of the new date and time to be set.
+	 */
 	void setEvent_DateTime(ZonedDateTime Event_DT)
 	{
 		this.Event_DateTime=Event_DT;
+	}
+	/**
+	 * Sets the date and time of the Event. The String should be parsable to ZondedDateTime. If not, then previous value is retained.
+	 * @param Event_DT : String containing Date and Time that is parsable to ZonedDateTime.
+	 */
+	void setEvent_DateTime(String Event_DT)
+	{
+		ZonedDateTime prev=this.Event_DateTime;
+		try
+		{
+			this.Event_DateTime=ZonedDateTime.parse(Event_DT);
+		}
+		catch(DateTimeParseException e)
+		{
+			this.Event_DateTime=prev;
+			e.getStackTrace();
+		}
 	}
 	/**
 	 * Gets the Description of the Event

@@ -213,7 +213,7 @@ class FileIO {
 			writer.close();
 			
 			BufferedReader reader=new BufferedReader(new FileReader(UI.CurrentSession.User_received_request_file));
-			from=reader.readLine().trim();
+			from=reader.readLine();
 			while(from!=null)
 			{
 				from=from.trim();
@@ -1140,6 +1140,7 @@ class FileIO {
 					{
 					    existing.setStatus(response);
 					}
+					temp=RSVP_reader.readLine();
 				}
 			}
 			return map.values().toArray(new Invitation[0]);
@@ -1233,6 +1234,7 @@ class FileIO {
 	 */
 	static User SearchUserID(String ID)
 	{
+		if(UI.CurrentSession.UserCache.containsKey(ID)) return UI.CurrentSession.UserCache.get(ID);
 		String emailaddress,name,password;
 		try(BufferedReader reader = new BufferedReader(new FileReader("root/Users.txt")))
 		{
@@ -1254,7 +1256,9 @@ class FileIO {
 					emailaddress=test.substring(0,index);
 					
 					password=test.substring(index+1);//Email Address removed we only have password now
-					return new User(ID,name,emailaddress,password);
+					User found=new User(ID,name,emailaddress,password);
+					UI.CurrentSession.UserCache.put(ID, found);
+					return found;
 				}
 				test=reader.readLine();
 			}
@@ -1549,9 +1553,11 @@ class FileIO {
 	 */
 	static boolean ChangeUserProfile()
 	{
+		
 		ArrayList<User> Users =new ArrayList<>();
 		try(BufferedReader reader=new BufferedReader(new FileReader(FileIO.USER_FILE)))
 		{
+			UI.CurrentSession.UserCache.remove(UI.CurrentSession.CurrentUser.getID());
 			String temp,ID,username,password,emailaddress;
 			int index;
 			temp=reader.readLine();
@@ -1729,6 +1735,7 @@ class FileIO {
 					continue;
 				}
 				writer.write(Upcomingev[i].getID()+","+Upcomingev[i].getName()+","+Upcomingev[i].getDescription()+","+Upcomingev[i].getLocation()+","+Upcomingev[i].getEventType()+","+Upcomingev[i].getEvent_DateTime());
+				writer.newLine();
 			}
 			writer.close();
 			return true;
@@ -1945,7 +1952,7 @@ class FileIO {
 					}
 					else
 					{
-						UI.CurrentSession.CurrentUser.removeFriend(FileIO.SearchUserID(To));
+						UI.CurrentSession.CurrentUser.removeFriend(To);
 					}
 				}
 				temp=reader.readLine();

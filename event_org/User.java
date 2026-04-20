@@ -1,5 +1,5 @@
 package event_org;
-
+import java.util.ArrayList;
 /**
  * This class stores the basic information of the User. Both User name and ID are unique for every user.
  * Username can be changed but it still needs to be unique.
@@ -51,6 +51,7 @@ class User {
 	{
 		this.Name=Name;
 		this.ID=ID;
+		FriendList = null; 
 	}
 	 /**
      * Removes a friend from the friend list.
@@ -59,11 +60,36 @@ class User {
      */
 	boolean removeFriend(User Friend)
 	{
+		if(FriendList == null) return false;
 		if(Friend==null) return false;
 		for(int i=0;i<FriendCount;i++)
 		{
 			if(FriendList[i]==null) continue;
 			if(FriendList[i].ID.equals(Friend.ID))
+			{
+				for(int j=i;j<FriendCount-1;j++)
+				{
+					FriendList[j]=FriendList[j+1];
+				}
+				FriendList[--FriendCount]=null;
+				return true;
+			}
+		}
+		return false;
+	}
+	/**
+     * Removes a friend from the friend list using ID.
+     * @param ID :The ID of the friend to be removed
+     * @return true if the friend was removed, false otherwise
+     */
+	boolean removeFriend(String ID)
+	{
+		if(FriendList == null) return false;
+		if(ID==null) return false;
+		for(int i=0;i<FriendCount;i++)
+		{
+			if(FriendList[i]==null) continue;
+			if(FriendList[i].ID.equals(ID))
 			{
 				for(int j=i;j<FriendCount-1;j++)
 				{
@@ -84,6 +110,7 @@ class User {
      */
 	boolean addFriend(User Friend[])
 	{
+		if(FriendList == null) return false;
 		if(Friend==null) return false;
 		if(Friend.length>User.MAXFRIENDS-this.FriendCount) return false;
 		for(User u:Friend)
@@ -100,6 +127,7 @@ class User {
      */
 	boolean addFriend(User Friend)
 	{
+		if(FriendList == null) return false;
 		if(Friend==null) return false;
 		
 		if(FriendCount>=MAXFRIENDS)
@@ -115,24 +143,16 @@ class User {
      */
 	User[] getFriend()
 	{
-		User return_friends[];
-		int indexes[]=new int[FriendCount];
-		int count=0;
+		
+		ArrayList<User> return_friends= new ArrayList<User>();
 		User temp;
 		for(int i=0;i<FriendList.length;i++)
 		{
 			temp=FriendList[i];
 			if(temp==null) continue;
-			indexes[count++]=i;
+			return_friends.add(temp);
 		}
-		return_friends=new User[count];
-		
-		int j=0;
-		for(int i=0;i<count;i++)
-		{
-			return_friends[j++]=FriendList[indexes[i]];
-		}
-		return return_friends;
+		return return_friends.toArray(new User[0]);
 	}
 	 /**
      * Retrieves friends whose names contain a given substring.
@@ -142,27 +162,15 @@ class User {
      */
 	User[] getFriendByName(String username_substring)
 	{
-		User return_friends[];
-		int indexes[]=new int[FriendCount];
-		int count=0;
+		ArrayList<User> return_friends= new ArrayList<User>();
 		User temp;
 		for(int i=0;i<FriendList.length;i++)
 		{
 			temp=FriendList[i];
 			if(temp==null) continue;
-			if(temp.getUsername().contains(username_substring))
-			{
-				indexes[count++]=i;
-			}
+			if(temp.getUsername().contains(username_substring)) return_friends.add(temp);
 		}
-		return_friends=new User[count];
-		
-		int j=0;
-		for(int i=0;i<count;i++)
-		{
-			return_friends[j++]=FriendList[indexes[i]];
-		}
-		return return_friends;
+		return return_friends.toArray(new User[0]);
 	}
 	/**
      * Retrieves a friend by their ID.

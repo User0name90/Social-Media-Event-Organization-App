@@ -12,6 +12,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * Utility interface providing ANSI color constants and colored console output helpers.
@@ -1015,6 +1016,7 @@ abstract class UI {
 		Event Ev[];
 		String Fields[]= {"ID","Name","Description","Location","Type","Date and Time"};
 		String data[][];
+		
 		while(true)
 		{
 			int choice_in = prompt("Go Back","View All Events","View Upcoming Events","View Past Events","View Event By ID");
@@ -1036,22 +1038,23 @@ abstract class UI {
 						upcoming.add(Ev[i]);
 					}
 				}
-				upcoming.toArray(Ev);
+				
+				Ev=upcoming.toArray(new Event[0]);
 				data=new String[Ev.length][6];
 			}
 			else if(choice_in==3)
 			{
 				Ev = FileIO.GetUserEvent();
-				ArrayList<Event> upcoming=new ArrayList<>();
+				ArrayList<Event> past=new ArrayList<>();
 				for(int i=0;i<Ev.length;i++)
 				{
 					if(Ev[i]==null) continue;
 					if(Ev[i].getEvent_DateTime().isBefore(ZonedDateTime.now()))
 					{
-						upcoming.add(Ev[i]);
+						past.add(Ev[i]);
 					}
 				}
-				upcoming.toArray(Ev);
+				Ev=past.toArray(new Event[0]);
 				data=new String[Ev.length][6];
 			}
 			else if (choice_in==4)
@@ -1082,7 +1085,6 @@ abstract class UI {
 			System.out.print("Total Events: ");
 			System.out.println(k);
 		}
-		
 	}
 	/**
 	 * Guides the user through creating a new event.
@@ -1551,6 +1553,7 @@ abstract class UI {
 					}
 					us=null;
 					us=FileIO.SearchUserID(ID);
+					break;
 				}
 			}
 			else if(choice_in==2)
@@ -1570,6 +1573,7 @@ abstract class UI {
 					}
 					us=null;
 					us=FileIO.SearchUsername(name);
+					break;
 				}
 			}
 			if(us==null)
@@ -1808,6 +1812,8 @@ abstract class UI {
  
 		/** In-memory list of {@link Notification} objects loaded at session start. */
 		static ArrayList<Notification> Notifications =new ArrayList<>();
+		/**Stores a small amount of users that have been earlier searched*/
+		static HashMap<String, User> UserCache = new HashMap<>();
 		/**
 		 * Initialises the session for the given authenticated user.
 		 * <p>
@@ -1984,6 +1990,7 @@ abstract class UI {
 			}
 			Event_Files=null;
 			Notifications.clear();
+			UserCache.clear();
 			return true;
 		}
 	}
