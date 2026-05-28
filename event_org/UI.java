@@ -1814,6 +1814,8 @@ abstract class UI {
 		static ArrayList<Notification> Notifications =new ArrayList<>();
 		/**Stores a small amount of users that have been earlier searched*/
 		static HashMap<String, User> UserCache = new HashMap<>();
+		
+		static private Sync sync_session;
 		/**
 		 * Initialises the session for the given authenticated user.
 		 * <p>
@@ -1948,6 +1950,8 @@ abstract class UI {
 				return false;
 			}
 		}
+			sync_session=new Sync();
+			sync_session.t1.start();
 			return true;
 		}
 		/**
@@ -1962,6 +1966,7 @@ abstract class UI {
 		 */
 		static boolean endSession()
 		{
+			sync_session.t1.interrupt();
 			if(!FileIO.SaveUserInfo())
 			{
 				UI_utility.PrintError("A Fatal Error occured while saving session info.");

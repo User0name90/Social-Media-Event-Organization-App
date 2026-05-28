@@ -1480,7 +1480,7 @@ class FileIO {
 	{
 		try(BufferedWriter writer = new BufferedWriter(new FileWriter(UI.CurrentSession.User_Info_file)))
 		{
-			writer.write(UI.CurrentSession.StartTime.toString());
+			writer.write(UI.CurrentSession.LastSessionTime.toString());
 			writer.newLine();
 			return true;
 		}
@@ -1831,7 +1831,7 @@ class FileIO {
 	 * to requests previously sent by the current user. Responded requests are removed
 	 * from the sent-requests file; if a request was accepted the responder is added as
 	 * a friend, and if the response is {@link RequestResponse#DELETED} the former
-	 * friend is removed.
+	 * friend is removed. It also generates notification for the same.
 	 * </p>
 	 *
 	 * @return {@code true} if all file operations succeeded; {@code false} on any
@@ -1877,6 +1877,8 @@ class FileIO {
 				{
 					writer.write(From);
 					writer.newLine();
+					UI.CurrentSession.Notifications.add(new Notification("You have received friend request by "+From +" at: "+sent_time.toString(), false,sent_time));	
+
 				}
 				temp=reader.readLine();
 			}
@@ -1946,12 +1948,21 @@ class FileIO {
 						fr_list.remove(new FriendRequest(From,To));
 						if(response.equals(RequestResponse.ACCEPTED))
 						{
+							
 							if(UI.CurrentSession.CurrentUser.getFriendByID(To).length==0)
+							{
+								UI.CurrentSession.Notifications.add(new Notification("Your Friend Request has been ACCEPTED by  "+To+" at: "+sent_time.toString(), false,sent_time));
 								UI.CurrentSession.CurrentUser.addFriend(FileIO.SearchUserID(To));
+							}
+						}
+						else
+						{
+							UI.CurrentSession.Notifications.add(new Notification("Your Friend Request has been DECLINED by  "+To+" at: "+sent_time.toString(), false,sent_time));
 						}
 					}
 					else
 					{
+						UI.CurrentSession.Notifications.add(new Notification("You have been removed as friend by "+To, false,ZonedDateTime.now()));
 						UI.CurrentSession.CurrentUser.removeFriend(To);
 					}
 				}
